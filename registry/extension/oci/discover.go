@@ -31,9 +31,17 @@ func (th *extensionHandler) getExtensions(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 
+	registered := extension.EnumerateRegistered()
+
+	extensions := make([]ociExtension, len(registered))
+	for _, e := range registered {
+		extensions = append(extensions, ociExtension{Name: e.Name, Description: e.Description, Url: e.Path})
+	}
+
 	enc := json.NewEncoder(w)
 	if err := enc.Encode(discoverGetAPIResponse{
-		Name: th.Repository.Named().Name(),
+		Name:       th.Repository.Named().Name(),
+		Extensions: extensions,
 	}); err != nil {
 		th.Errors = append(th.Errors, errcode.ErrorCodeUnknown.WithDetail(err))
 		return
