@@ -1,6 +1,7 @@
 package extension
 
 import (
+	"context"
 	c "context"
 	"fmt"
 	"net/http"
@@ -55,6 +56,25 @@ type Namespace interface {
 type InitExtensionNamespace func(ctx c.Context, storageDriver driver.StorageDriver, options configuration.ExtensionConfig) (Namespace, error)
 
 var extensions map[string]InitExtensionNamespace
+
+func EnumerateRegistered() []v2.RouteDescriptor {
+	descs := make([]v2.RouteDescriptor, 0)
+	for _, ext := range extensions {
+		namespace, err := ext(context.TODO(), nil, nil)
+		if err != nil {
+			registryScoped := namespace.GetRegistryRoutes()
+			for _, regScoped := range registryScoped {
+				descs = append(descs, regScoped.Descriptor)
+			}
+
+			repositoryScoped := namespace.GetRepositoryRoutes()
+			for _, repScoped := range repositoryScoped {
+				descs = append(descs, repScoped.Descriptor)
+			}
+		}
+	}
+	return descs
+}
 
 // Register is used to register an InitExtensionNamespace for
 // an extension namespace with the given name.
